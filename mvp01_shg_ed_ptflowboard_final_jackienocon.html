@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SHG ED Real-Time Patient Flow Board — Dubai Central Hospital</title>
+<style>
+  :root{
+    --teal:#0095D4;
+    --teal-dark:#006C9C;
+    --charcoal:#14293D;
+    --paper:#ffffff;
+    --mist:#EAF7FC;
+    --line:#E4E9ED;
+    --green:#1f8a4c;
+    --green-bg:#e3f5e9;
+    --amber:#a86d00;
+    --amber-bg:#fdf1d6;
+    --red:#b3261e;
+    --red-bg:#fbe2e0;
+    --grey:#6B7A88;
+    --grey-bg:#EEF2F5;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#F4F6F8;font-family:'Segoe UI',Arial,sans-serif;color:var(--charcoal);}
+  .page{
+    width:1122px;
+    min-height:780px;
+    margin:16px auto;
+    background:var(--paper);
+    padding:18px 22px 14px 22px;
+    box-shadow:0 2px 14px rgba(0,0,0,.25);
+  }
+  /* HEADER */
+  .hdr{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid var(--teal);padding-bottom:8px;margin-bottom:12px;}
+  .hdr-left h1{margin:0;font-size:19px;letter-spacing:.3px;color:var(--teal-dark);}
+  .hdr-left .sub{font-size:12px;color:var(--grey);margin-top:2px;}
+  .hdr-right{text-align:right;font-size:12px;color:var(--grey);}
+  .hdr-right .clock{font-size:20px;font-weight:700;color:var(--teal-dark);font-variant-numeric:tabular-nums;}
+  .hdr-right .prep{font-size:11.5px;font-weight:700;color:var(--charcoal);line-height:1.35;}
+  .hdr-right .prep-sub{font-size:10.5px;font-weight:500;color:var(--grey);}
+  .hdr-right .demo-flag{display:inline-block;margin-top:3px;margin-bottom:6px;font-size:9.5px;font-weight:700;letter-spacing:.4px;color:#8A6116;background:#FFF4DE;border-radius:8px;padding:2px 8px;}
+  .tag{display:inline-block;background:var(--teal);color:#fff;font-size:10px;letter-spacing:.5px;padding:2px 8px;border-radius:10px;margin-left:8px;vertical-align:middle;}
+
+  /* SUMMARY TILES */
+  .tiles{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-bottom:12px;}
+  .tile{background:var(--mist);border:1px solid var(--line);border-left:4px solid var(--teal);border-radius:4px;padding:7px 9px;}
+  .tile .val{font-size:22px;font-weight:700;color:var(--teal-dark);line-height:1.05;}
+  .tile .val small{font-size:12px;font-weight:600;color:var(--grey);}
+  .tile .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--charcoal);margin-top:2px;}
+  .tile.amber{border-left-color:var(--amber);} .tile.amber .val{color:var(--amber);}
+  .tile.red{border-left-color:var(--red);} .tile.red .val{color:var(--red);}
+  .tile.grey{border-left-color:var(--grey);} .tile.grey .val{color:var(--grey);}
+
+  /* LEGEND */
+  .legend{display:flex;align-items:center;gap:16px;font-size:10.5px;color:var(--charcoal);margin-bottom:8px;flex-wrap:wrap;}
+  .legend b{color:var(--teal-dark);}
+  .swatch{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:4px;vertical-align:middle;}
+
+  /* TABLE */
+  table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:10.6px;}
+  thead th{background:var(--teal);color:#fff;font-size:9.5px;text-transform:uppercase;letter-spacing:.3px;padding:5px 3px;text-align:center;border-right:1px solid rgba(255,255,255,.25);}
+  thead tr.grp th{background:var(--teal-dark);font-size:9px;}
+  tbody td{padding:3.5px 3px;text-align:center;border-bottom:1px solid var(--line);border-right:1px solid var(--line);white-space:nowrap;}
+  tbody td.name{text-align:left;padding-left:6px;font-weight:600;}
+  tbody tr:nth-child(even) td{background:#fafcfc;}
+  col.mrn{width:6.8%;} col.triage{width:5.2%;} col.doc{width:6%;} col.nur{width:6%;}
+  col.stage{width:5.8%;}
+  col.total{width:6.4%;}
+  col.status{width:10.5%;}
+  thead th .tgt{display:block;font-size:8px;font-weight:500;color:#CDE9F6;letter-spacing:0;}
+  thead tr:last-child th{line-height:1.3;}
+
+  td.g{background:var(--green-bg);color:var(--green);font-weight:700;}
+  td.a{background:var(--amber-bg);color:var(--amber);font-weight:700;}
+  td.r{background:var(--red-bg);color:var(--red);font-weight:700;}
+  td.n{background:var(--grey-bg);color:var(--grey);}
+  td.live::after{content:" ●";font-size:8px;vertical-align:2px;}
+
+  .status-badge{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:8px;}
+  .status-badge.ined{background:#DCEEF7;color:var(--teal-dark);}
+  .status-badge.disch{background:var(--green-bg);color:var(--green);}
+  .status-badge.adm{background:#dde7f5;color:#2b4c8c;}
+  .status-badge.lwbs{background:var(--grey-bg);color:var(--grey);}
+
+  .triage-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;min-width:22px;}
+  .triage-badge.l1{background:#fbe2e0;color:#b3261e;}
+  .triage-badge.l2{background:#fde0d3;color:#c1521e;}
+  .triage-badge.l3{background:#fdf1d6;color:#a86d00;}
+  .triage-badge.l4{background:#eaf5e0;color:#4c8a2e;}
+  .triage-badge.l5{background:#e3eefb;color:#2b5c8c;}
+
+  .foot{display:flex;justify-content:space-between;font-size:9px;color:var(--grey);margin-top:8px;border-top:1px solid var(--line);padding-top:5px;}
+  .foot .abbr{max-width:900px;}
+  @media print{
+    body{background:#fff;}
+    .page{box-shadow:none;margin:0;width:100%;}
+    @page{size:A4 landscape;margin:8mm;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="hdr">
+    <div class="hdr-left">
+      <h1>SAMBOOSA HEALTH GROUP <span class="tag">ED COMMAND BOARD</span></h1>
+      <div class="sub">Dubai Central Hospital — Emergency Department · Real-Time Patient Flow &amp; Target Compliance</div>
+    </div>
+    <div class="hdr-right">
+      <div class="prep">Prepared by Jackie Nocon, MSHM, PMP®<br><span class="prep-sub">Digital Product Manager — Application Assessment</span></div>
+      <div class="demo-flag">FOR DEMO PURPOSES ONLY</div>
+      <div class="clock" id="clock">--:--:--</div>
+      <div id="dateline">—</div>
+    </div>
+  </div>
+
+  <!-- SUMMARY TILES -->
+  <div class="tiles" id="tiles">
+    <div class="tile"><div class="val" id="t-los">--</div><div class="lbl">Avg Total LOS (min) · Target 156</div></div>
+    <div class="tile"><div class="val" id="t-bay">34<small>/40</small></div><div class="lbl">Bay Occupancy</div></div>
+    <div class="tile"><div class="val" id="t-completed">--</div><div class="lbl">Completed Today</div></div>
+    <div class="tile"><div class="val" id="t-waiting">--</div><div class="lbl">Currently in ED</div></div>
+    <div class="tile amber"><div class="val" id="t-atrisk">--</div><div class="lbl">At Risk (Amber)</div></div>
+    <div class="tile red"><div class="val" id="t-breached">--</div><div class="lbl">Breached (Red)</div></div>
+    <div class="tile grey"><div class="val" id="t-lwbs">--</div><div class="lbl">LWBS Today</div></div>
+    <div class="tile"><div class="val" id="t-boarding">--</div><div class="lbl">Boarding (Awaiting Bed)</div></div>
+  </div>
+
+  <div class="legend">
+    <span><span class="swatch" style="background:var(--green-bg);border:1px solid var(--green)"></span><b>On Target</b> &lt;75% of target time</span>
+    <span><span class="swatch" style="background:var(--amber-bg);border:1px solid var(--amber)"></span><b>At Risk</b> 75–100% of target time</span>
+    <span><span class="swatch" style="background:var(--red-bg);border:1px solid var(--red)"></span><b>Breached</b> &gt;100% of target time</span>
+    <span><span class="swatch" style="background:var(--grey-bg);border:1px solid var(--grey)"></span><b>Not yet reached / N-A</b></span>
+    <span>● = live, updating in real time</span>
+  </div>
+
+  <table>
+    <colgroup>
+      <col class="mrn"><col class="triage"><col class="doc"><col class="nur">
+      <col class="stage"><col class="stage"><col class="stage"><col class="stage"><col class="stage"><col class="stage"><col class="stage"><col class="stage"><col class="stage">
+      <col class="total"><col class="status">
+    </colgroup>
+    <thead>
+      <tr class="grp">
+        <th colspan="4">Care Team</th>
+        <th colspan="9">Patient Journey (minutes elapsed / target)</th>
+        <th colspan="2">Outcome</th>
+      </tr>
+      <tr>
+        <th>MRN</th><th>Triage<br>Level</th><th>Physician</th><th>Nurse</th>
+        <th title="Door-to-Registration">D2R<br><span class="tgt">(≤5)</span></th>
+        <th title="Registration Duration">REG<br><span class="tgt">(≤5)</span></th>
+        <th title="Registration-to-Triage">R2T<br><span class="tgt">(≤5)</span></th>
+        <th title="Triage Duration">TRI<br><span class="tgt">(≤6)</span></th>
+        <th title="Triage-to-Doctor">T2D<br><span class="tgt">(≤54)</span></th>
+        <th title="Doctor Assessment Duration">DR<br><span class="tgt">(≤13)</span></th>
+        <th title="Diagnostic TAT">DX<br><span class="tgt">(≤36)</span></th>
+        <th title="Result-to-Disposition">R2D<br><span class="tgt">(≤15)</span></th>
+        <th title="Disposition-to-Departure">D2DEP<br><span class="tgt">(≤17)</span></th>
+        <th>Total LOS<br><span class="tgt">(≤156)</span></th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+  <div class="foot">
+    <div class="abbr"><b>Abbreviations:</b> D2R Door-to-Registration · REG Registration Duration · R2T Registration-to-Triage · TRI Triage Duration · T2D Triage-to-Doctor · DR Doctor Assessment · DX Diagnostic Turnaround Time · R2D Result-to-Disposition · D2DEP Disposition-to-Departure · LOS Length of Stay · LWBS Left Without Being Seen</div>
+    <div>Synthetic demonstration data · Samboosa Health Group ED Digital Transformation Pilot</div>
+  </div>
+
+</div>
+
+<script>
+const TARGETS = {d2r:5,reg:5,r2t:5,tri:6,t2d:54,dr:13,dx:36,r2d:15,d2dep:17,total:156};
+const STAGE_ORDER = ['d2r','reg','r2t','tri','t2d','dr','dx','r2d','d2dep'];
+const now0 = Date.now();
+const min = m => now0 - m*60000; // helper: timestamp m minutes ago
+
+// Each patient: completed stages have a fixed number (minutes).
+// One stage may be {active:true, since: <timestamp>} which ticks live.
+// Remaining stages after the active one are null (not yet reached).
+const patients = [
+  {mrn:'MRN0001',triage:'L3',doc:'Dr_01',nur:'Nurse_01',status:'disch',
+   s:{d2r:4,reg:5,r2t:4,tri:5,t2d:48,dr:11,dx:30,r2d:12,d2dep:14}},
+  {mrn:'MRN0002',triage:'L4',doc:'Dr_02',nur:'Nurse_02',status:'disch',
+   s:{d2r:6,reg:7,r2t:6,tri:8,t2d:70,dr:18,dx:50,r2d:20,d2dep:25}},
+  {mrn:'MRN0003',triage:'L2',doc:'Dr_01',nur:'Nurse_03',status:'ined',
+   s:{d2r:5,reg:5,r2t:5,tri:6,t2d:55,dr:14,dx:38,r2d:16,d2dep:{active:true,since:min(40)}},
+   note:'Boarding — awaiting inpatient bed'},
+  {mrn:'MRN0004',triage:'L3',doc:'Dr_03',nur:'Nurse_01',status:'ined',
+   s:{d2r:4,reg:4,r2t:3,tri:5,t2d:50,dr:{active:true,since:min(10)},dx:null,r2d:null,d2dep:null}},
+  {mrn:'MRN0005',triage:'L2',doc:'Dr_02',nur:'Nurse_04',status:'ined',
+   s:{d2r:5,reg:5,r2t:4,tri:6,t2d:{active:true,since:min(62)},dr:null,dx:null,r2d:null,d2dep:null}},
+  {mrn:'MRN0006',triage:'L4',doc:'Dr_04',nur:'Nurse_02',status:'ined',
+   s:{d2r:5,reg:{active:true,since:min(3)},r2t:null,tri:null,t2d:null,dr:null,dx:null,r2d:null,d2dep:null}},
+  {mrn:'MRN0007',triage:'L3',doc:'Dr_01',nur:'Nurse_05',status:'ined',
+   s:{d2r:5,reg:5,r2t:5,tri:6,t2d:52,dr:12,dx:{active:true,since:min(40)},r2d:null,d2dep:null}},
+  {mrn:'MRN0008',triage:'L4',doc:'Dr_03',nur:'Nurse_03',status:'disch',
+   s:{d2r:3,reg:4,r2t:3,tri:5,t2d:40,dr:10,dx:28,r2d:10,d2dep:12}},
+  {mrn:'MRN0009',triage:'L3',doc:'Dr_02',nur:'Nurse_01',status:'ined',
+   s:{d2r:5,reg:5,r2t:4,tri:6,t2d:50,dr:12,dx:34,r2d:{active:true,since:min(20)},d2dep:null}},
+  {mrn:'MRN0010',triage:'L1',doc:'Dr_04',nur:'Nurse_04',status:'ined',
+   s:{d2r:{active:true,since:min(2)},reg:null,r2t:null,tri:null,t2d:null,dr:null,dx:null,r2d:null,d2dep:null}},
+  {mrn:'MRN0011',triage:'L5',doc:'Dr_01',nur:'Nurse_02',status:'lwbs',
+   s:{d2r:5,reg:6,r2t:5,tri:7,t2d:null,dr:null,dx:null,r2d:null,d2dep:null}},
+  {mrn:'MRN0012',triage:'L3',doc:'Dr_03',nur:'Nurse_05',status:'ined',
+   s:{d2r:5,reg:5,r2t:4,tri:{active:true,since:min(9)},t2d:null,dr:null,dx:null,r2d:null,d2dep:null}},
+  {mrn:'MRN0013',triage:'L4',doc:'Dr_02',nur:'Nurse_03',status:'disch',
+   s:{d2r:5,reg:6,r2t:5,tri:6,t2d:58,dr:14,dx:37,r2d:14,d2dep:16}},
+  {mrn:'MRN0014',triage:'L2',doc:'Dr_04',nur:'Nurse_01',status:'ined',
+   s:{d2r:4,reg:5,r2t:4,tri:5,t2d:49,dr:{active:true,since:min(11)},dx:null,r2d:null,d2dep:null}},
+  {mrn:'MRN0015',triage:'L3',doc:'Dr_01',nur:'Nurse_04',status:'adm',
+   s:{d2r:4,reg:4,r2t:4,tri:5,t2d:45,dr:12,dx:32,r2d:13,d2dep:15}},
+];
+
+function colorClass(mins, target){
+  const pct = mins/target;
+  if(pct < 0.75) return 'g';
+  if(pct <= 1.0) return 'a';
+  return 'r';
+}
+
+function statusBadge(p){
+  const map = {disch:['Discharged','disch'], adm:['Admitted','adm'], lwbs:['LWBS','lwbs'], ined:['In ED','ined']};
+  const [label,cls] = map[p.status];
+  return `<span class="status-badge ${cls}">${label}</span>`;
+}
+
+function render(){
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  let completed=0, waiting=0, lwbs=0, boarding=0, atRisk=0, breached=0, losSum=0, losCount=0;
+
+  patients.forEach(p=>{
+    const triageCls = p.triage.toLowerCase();
+    let rowHtml = `<td class="name">${p.mrn}</td><td><span class="triage-badge ${triageCls}">${p.triage}</span></td><td>${p.doc}</td><td>${p.nur}</td>`;
+    let total = 0, hasNull=false, allDone=true;
+
+    STAGE_ORDER.forEach(key=>{
+      const val = p.s[key];
+      const target = TARGETS[key];
+      if(val === null || val === undefined){
+        rowHtml += `<td class="n">—</td>`;
+        allDone = false;
+      } else if(typeof val === 'object' && val.active){
+        const mins = (Date.now()-val.since)/60000;
+        const cls = colorClass(mins,target);
+        if(cls==='a') atRisk++;
+        if(cls==='r') breached++;
+        rowHtml += `<td class="${cls} live">${mins.toFixed(0)}</td>`;
+        total += mins;
+        allDone = false;
+      } else {
+        const cls = colorClass(val,target);
+        rowHtml += `<td class="${cls}">${val}</td>`;
+        total += val;
+      }
+    });
+
+    const totalCls = allDone ? colorClass(total,TARGETS.total) : (total/TARGETS.total>1?'r':(total/TARGETS.total>=0.75?'a':'g'));
+    rowHtml += `<td class="${totalCls}${allDone?'':' live'}">${total.toFixed(0)}</td>`;
+    rowHtml += `<td>${statusBadge(p)}${p.note?`<div style="font-size:8px;color:var(--grey);margin-top:1px;">${p.note}</div>`:''}</td>`;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = rowHtml;
+    tbody.appendChild(tr);
+
+    if(p.status==='disch' || p.status==='adm'){ completed++; if(allDone){losSum+=total; losCount++;} }
+    if(p.status==='ined') waiting++;
+    if(p.status==='lwbs') lwbs++;
+    if(p.note && p.note.includes('Boarding')) boarding++;
+  });
+
+  document.getElementById('t-los').textContent = losCount ? Math.round(losSum/losCount) : '--';
+  document.getElementById('t-completed').textContent = completed;
+  document.getElementById('t-waiting').textContent = waiting;
+  document.getElementById('t-atrisk').textContent = atRisk;
+  document.getElementById('t-breached').textContent = breached;
+  document.getElementById('t-lwbs').textContent = lwbs;
+  document.getElementById('t-boarding').textContent = boarding;
+}
+
+function tickClock(){
+  const d = new Date();
+  document.getElementById('clock').textContent = d.toLocaleTimeString('en-GB',{hour12:false});
+  document.getElementById('dateline').textContent = d.toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'}) + ' · Gulf Standard Time';
+}
+
+render();
+tickClock();
+setInterval(render, 5000);
+setInterval(tickClock, 1000);
+</script>
+</body>
+</html>
